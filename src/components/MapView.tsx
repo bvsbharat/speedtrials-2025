@@ -21,9 +21,16 @@ import {
   Trash2,
 } from "lucide-react";
 import { SupabaseService } from "../services/supabaseService";
-import GeocodingService, { CoordinateResult } from "../services/geocodingService";
+import GeocodingService, {
+  CoordinateResult,
+} from "../services/geocodingService";
 import { WaterSystem } from "../types/sdwis";
-import { MapFilters, MapMarker, HeatmapData, PolygonSelection } from "../types/maps";
+import {
+  MapFilters,
+  MapMarker,
+  HeatmapData,
+  PolygonSelection,
+} from "../types/maps";
 import TimelineSlider from "./TimelineSlider";
 import ZoneDetailsPanel from "./ZoneDetailsPanel";
 
@@ -53,7 +60,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const [heatmap, setHeatmap] =
     useState<google.maps.visualization.HeatmapLayer>();
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [drawingManager, setDrawingManager] = useState<google.maps.drawing.DrawingManager>();
+  const [drawingManager, setDrawingManager] =
+    useState<google.maps.drawing.DrawingManager>();
 
   useEffect(() => {
     if (ref.current && !map) {
@@ -101,34 +109,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
         },
       });
       setMap(newMap);
-      
+
       // Initialize drawing manager
       const newDrawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: null,
         drawingControl: false,
         polygonOptions: {
-          fillColor: '#2563eb',
+          fillColor: "#2563eb",
           fillOpacity: 0.2,
-          strokeColor: '#2563eb',
+          strokeColor: "#2563eb",
           strokeWeight: 2,
           clickable: true,
           editable: true,
           zIndex: 1,
         },
       });
-      
+
       newDrawingManager.setMap(newMap);
       setDrawingManager(newDrawingManager);
-      
+
       // Handle polygon completion
-      newDrawingManager.addListener('polygoncomplete', (polygon: google.maps.Polygon) => {
-        onPolygonComplete(polygon);
-        // Disable drawing mode after polygon is created
-        newDrawingManager.setDrawingMode(null);
-      });
+      newDrawingManager.addListener(
+        "polygoncomplete",
+        (polygon: google.maps.Polygon) => {
+          onPolygonComplete(polygon);
+          // Disable drawing mode after polygon is created
+          newDrawingManager.setDrawingMode(null);
+        }
+      );
     }
   }, [ref, map, center, zoom, onPolygonComplete]);
-  
+
   // Handle drawing mode changes
   useEffect(() => {
     if (drawingManager) {
@@ -155,7 +166,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
       const batchSize = 10;
       for (let i = 0; i < waterSystems.length; i += batchSize) {
         const batch = waterSystems.slice(i, i + batchSize);
-        
+
         const batchPromises = batch.map(async (system, batchIndex) => {
           const index = i + batchIndex;
           try {
@@ -192,9 +203,12 @@ const MapComponent: React.FC<MapComponentProps> = ({
             }
 
             // Apply filters based on system status
-            if (systemStatus === "compliant" && !filters.showCompliant) return null;
-            if (systemStatus === "violation" && !filters.showActiveViolations) return null;
-            if (systemStatus === "critical" && !filters.showCriticalSystems) return null;
+            if (systemStatus === "compliant" && !filters.showCompliant)
+              return null;
+            if (systemStatus === "violation" && !filters.showActiveViolations)
+              return null;
+            if (systemStatus === "critical" && !filters.showCriticalSystems)
+              return null;
 
             // Add to heatmap based on compliance status
             if (filters.showViolationHeatmap && systemStatus !== "compliant") {
@@ -222,7 +236,9 @@ const MapComponent: React.FC<MapComponentProps> = ({
               map: map,
               title: `${system.name}\nPopulation: ${(
                 system.populationServed || 0
-              ).toLocaleString()}\nActive Violations: ${activeViolations.length}`,
+              ).toLocaleString()}\nActive Violations: ${
+                activeViolations.length
+              }`,
               icon: {
                 path: google.maps.SymbolPath.CIRCLE,
                 scale: markerSize,
@@ -267,18 +283,24 @@ const MapComponent: React.FC<MapComponentProps> = ({
 
             return marker;
           } catch (error) {
-            console.error('Error creating marker for system:', system.name, error);
+            console.error(
+              "Error creating marker for system:",
+              system.name,
+              error
+            );
             return null;
           }
         });
-        
+
         const batchMarkers = await Promise.all(batchPromises);
-        const validMarkers = batchMarkers.filter(marker => marker !== null) as google.maps.Marker[];
+        const validMarkers = batchMarkers.filter(
+          (marker) => marker !== null
+        ) as google.maps.Marker[];
         newMarkers.push(...validMarkers);
-        
+
         // Small delay between batches to be respectful to the geocoding service
         if (i + batchSize < waterSystems.length) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       }
 
@@ -327,8 +349,10 @@ const coordinateCache = new Map<string, google.maps.LatLngLiteral>();
 const getCoordinatesForSystem = async (
   system: WaterSystem
 ): Promise<google.maps.LatLngLiteral> => {
-  const cacheKey = `${system.county || ''}_${system.city || ''}_${system.name || ''}`;
-  
+  const cacheKey = `${system.county || ""}_${system.city || ""}_${
+    system.name || ""
+  }`;
+
   // Check session cache first
   if (coordinateCache.has(cacheKey)) {
     return coordinateCache.get(cacheKey)!;
@@ -338,32 +362,40 @@ const getCoordinatesForSystem = async (
     const result = await GeocodingService.getCoordinatesForSystem({
       county: system.county,
       city: system.city,
-      name: system.name
+      name: system.name,
     });
-    
+
     const coordinates = { lat: result.lat, lng: result.lng };
     coordinateCache.set(cacheKey, coordinates);
-    
+
     // Log the source and confidence for debugging
-    if (result.source === 'google_maps') {
-      console.log(`🗺️ Google Maps result for ${system.name}: ${result.lat}, ${result.lng} (confidence: ${result.confidence})`);
-    } else if (result.source === 'cache') {
-      console.log(`💾 Cached result for ${system.name}: ${result.lat}, ${result.lng}`);
+    if (result.source === "google_maps") {
+      console.log(
+        `🗺️ Google Maps result for ${system.name}: ${result.lat}, ${result.lng} (confidence: ${result.confidence})`
+      );
+    } else if (result.source === "cache") {
+      console.log(
+        `💾 Cached result for ${system.name}: ${result.lat}, ${result.lng}`
+      );
     } else {
-      console.log(`⚠️ Fallback coordinates for ${system.name}: ${result.lat}, ${result.lng}`);
+      console.log(
+        `⚠️ Fallback coordinates for ${system.name}: ${result.lat}, ${result.lng}`
+      );
     }
-    
+
     return coordinates;
   } catch (error) {
-    console.error('Error getting coordinates for system:', system.name, error);
+    console.error("Error getting coordinates for system:", system.name, error);
     // Fallback to Georgia center with slight offset based on system ID
-    const idSum = (system.pwsid || '').split('').reduce((sum, char) => sum + char.charCodeAt(0), 0);
-    const latOffset = (idSum % 200 - 100) / 1000; // Smaller offset for fallback
-    const lngOffset = ((idSum * 13) % 200 - 100) / 1000;
-    
-    const fallback = { 
-      lat: 32.1656 + latOffset, 
-      lng: -82.9001 + lngOffset 
+    const idSum = (system.pwsid || "")
+      .split("")
+      .reduce((sum, char) => sum + char.charCodeAt(0), 0);
+    const latOffset = ((idSum % 200) - 100) / 1000; // Smaller offset for fallback
+    const lngOffset = (((idSum * 13) % 200) - 100) / 1000;
+
+    const fallback = {
+      lat: 32.1656 + latOffset,
+      lng: -82.9001 + lngOffset,
     };
     coordinateCache.set(cacheKey, fallback);
     return fallback;
@@ -410,26 +442,29 @@ export const MapView: React.FC = () => {
   const [waterSystems, setWaterSystems] = useState<WaterSystem[]>([]);
   const [selectedMarker, setSelectedMarker] = useState<MapMarker | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState("May");
+  const [selectedDate, setSelectedDate] = useState("2024-01");
   const [drawingMode, setDrawingMode] = useState(false);
-  const [polygonSelections, setPolygonSelections] = useState<PolygonSelection[]>([]);
-  const [activeSelection, setActiveSelection] = useState<PolygonSelection | null>(null);
+  const [polygonSelections, setPolygonSelections] = useState<
+    PolygonSelection[]
+  >([]);
+  const [activeSelection, setActiveSelection] =
+    useState<PolygonSelection | null>(null);
 
   // Handle date range changes from timeline slider
   const handleDateRangeChange = (dateRange: { start: string; end: string }) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      dateRange
+      dateRange,
     }));
   };
   const [activeStage, setActiveStage] = useState("stages");
   const [showTransitions, setShowTransitions] = useState(false);
 
   const [filters, setFilters] = useState<MapFilters>({
-    systemType: 'all',
-    complianceStatus: 'all',
-    ownerType: 'all',
-    sourceType: 'all',
+    systemType: "all",
+    complianceStatus: "all",
+    ownerType: "all",
+    sourceType: "all",
     showViolations: true,
     showFacilities: false,
     showCompliant: true,
@@ -437,9 +472,9 @@ export const MapView: React.FC = () => {
     showCriticalSystems: true,
     showViolationHeatmap: true,
     dateRange: {
-      start: '2024-05-01',
-      end: '2024-05-31'
-    }
+      start: "2024-01-01",
+      end: "2024-01-31",
+    },
   });
 
   const [stats, setStats] = useState({
@@ -466,43 +501,60 @@ export const MapView: React.FC = () => {
     const loadWaterSystems = async () => {
       try {
         setLoading(true);
-        console.log('=== MapView: Starting data load ===');
-        console.log('Environment variables check:');
-        console.log('VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Missing');
-        console.log('VITE_SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Missing');
+        console.log("=== MapView: Starting data load ===");
+        console.log("Environment variables check:");
+        console.log(
+          "VITE_SUPABASE_URL:",
+          import.meta.env.VITE_SUPABASE_URL ? "Set" : "Missing"
+        );
+        console.log(
+          "VITE_SUPABASE_ANON_KEY:",
+          import.meta.env.VITE_SUPABASE_ANON_KEY ? "Set" : "Missing"
+        );
 
         // Build filters based on current state
         const systemFilters = {
-          systemType: filters.systemType !== 'all' ? filters.systemType : undefined,
-          complianceStatus: filters.complianceStatus !== 'all' ? filters.complianceStatus : undefined,
-          ownerType: filters.ownerType !== 'all' ? filters.ownerType : undefined,
-          sourceType: filters.sourceType !== 'all' ? filters.sourceType : undefined,
+          systemType:
+            filters.systemType !== "all" ? filters.systemType : undefined,
+          complianceStatus:
+            filters.complianceStatus !== "all"
+              ? filters.complianceStatus
+              : undefined,
+          ownerType:
+            filters.ownerType !== "all" ? filters.ownerType : undefined,
+          sourceType:
+            filters.sourceType !== "all" ? filters.sourceType : undefined,
           dateRange: filters.dateRange,
           limit: 1000, // Load more systems for comprehensive map view
         };
 
-        console.log('Calling SupabaseService.getWaterSystems() with filters:', systemFilters);
+        console.log(
+          "Calling SupabaseService.getWaterSystems() with filters:",
+          systemFilters
+        );
         const result = await SupabaseService.getWaterSystems(systemFilters);
         setWaterSystems(result.data);
 
         console.log(`=== Loaded ${result.data.length} water systems ===`);
         if (result.data.length > 0) {
-          console.log('✅ Sample system:', result.data[0]);
+          console.log("✅ Sample system:", result.data[0]);
         } else {
-          console.log('❌ No water systems loaded - checking database connection...');
+          console.log(
+            "❌ No water systems loaded - checking database connection..."
+          );
           // Test basic Supabase connection
           const testResult = await SupabaseService.testConnection();
-          console.log('Database connection test:', testResult);
+          console.log("Database connection test:", testResult);
         }
       } catch (error) {
-          console.error("=== Error loading water systems ===", error);
-          // Test connection when there's an error
-          try {
-            const testResult = await SupabaseService.testConnection();
-            console.log('Connection test result after error:', testResult);
-          } catch (testError) {
-            console.error('Connection test failed:', testError);
-          }
+        console.error("=== Error loading water systems ===", error);
+        // Test connection when there's an error
+        try {
+          const testResult = await SupabaseService.testConnection();
+          console.log("Connection test result after error:", testResult);
+        } catch (testError) {
+          console.error("Connection test failed:", testError);
+        }
         // Fallback to empty array to prevent crashes
         setWaterSystems([]);
       } finally {
@@ -511,7 +563,14 @@ export const MapView: React.FC = () => {
     };
 
     loadWaterSystems();
-  }, [filters.systemType, filters.complianceStatus, filters.ownerType, filters.sourceType, filters.dateRange, filters.showViolations]);
+  }, [
+    filters.systemType,
+    filters.complianceStatus,
+    filters.ownerType,
+    filters.sourceType,
+    filters.dateRange,
+    filters.showViolations,
+  ]);
 
   // Calculate statistics from loaded water systems
   useEffect(() => {
@@ -543,14 +602,18 @@ export const MapView: React.FC = () => {
           (v) => v.status === "Unaddressed" || v.status === "Addressed"
         ).length;
         const healthBasedViolations = violationsResult.data.filter(
-          (v) => v.isHealthBased && (v.status === "Unaddressed" || v.status === "Addressed")
+          (v) =>
+            v.isHealthBased &&
+            (v.status === "Unaddressed" || v.status === "Addressed")
         ).length;
-        
-        console.log('📊 Violations loaded:', {
+
+        console.log("📊 Violations loaded:", {
           total: violationsResult.data.length,
           activeViolations,
           healthBasedViolations,
-          sampleStatuses: violationsResult.data.slice(0, 5).map(v => ({ status: v.status, isHealthBased: v.isHealthBased }))
+          sampleStatuses: violationsResult.data
+            .slice(0, 5)
+            .map((v) => ({ status: v.status, isHealthBased: v.isHealthBased })),
         });
 
         setViolations(violationsResult.data);
@@ -590,7 +653,10 @@ export const MapView: React.FC = () => {
   }, []);
 
   // Utility function to check if a point is inside a polygon
-  const isPointInPolygon = (point: google.maps.LatLngLiteral, polygon: google.maps.Polygon): boolean => {
+  const isPointInPolygon = (
+    point: google.maps.LatLngLiteral,
+    polygon: google.maps.Polygon
+  ): boolean => {
     return google.maps.geometry.poly.containsLocation(
       new google.maps.LatLng(point.lat, point.lng),
       polygon
@@ -604,76 +670,90 @@ export const MapView: React.FC = () => {
   };
 
   // Handle polygon completion
-  const handlePolygonComplete = useCallback((polygon: google.maps.Polygon) => {
-    const bounds = new google.maps.LatLngBounds();
-    polygon.getPath().forEach((latLng) => {
-      bounds.extend(latLng);
-    });
+  const handlePolygonComplete = useCallback(
+    (polygon: google.maps.Polygon) => {
+      const bounds = new google.maps.LatLngBounds();
+      polygon.getPath().forEach((latLng) => {
+        bounds.extend(latLng);
+      });
 
-    // Find systems inside the polygon (applying current filters)
-    const systemsInside = waterSystems.filter((system) => {
-      // Get coordinates for the system (using cached coordinates)
-      const cacheKey = `${system.county || ''}_${system.city || ''}_${system.name || ''}`;
-      const coords = coordinateCache.get(cacheKey);
-      if (!coords) return false;
-      
-      if (!isPointInPolygon(coords, polygon)) return false;
-      
-      // Apply the same filter logic as markers
-      const systemViolations = violations.filter((v) => v.pwsid === system.pwsid);
-      const activeViolations = systemViolations.filter(
-        (v) => v.status === "Unaddressed" || v.status === "Addressed"
-      );
-      const healthBasedViolations = activeViolations.filter((v) => v.isHealthBased);
-      
-      // Determine system status
-      let systemStatus = "compliant";
-      if (healthBasedViolations.length > 0) {
-        systemStatus = "critical";
-      } else if (activeViolations.length > 0) {
-        systemStatus = "violation";
-      }
-      
-      // Apply current filter settings
-      if (systemStatus === "compliant" && !filters.showCompliant) return false;
-      if (systemStatus === "violation" && !filters.showActiveViolations) return false;
-      if (systemStatus === "critical" && !filters.showCriticalSystems) return false;
-      
-      return true;
-    });
+      // Find systems inside the polygon (applying current filters)
+      const systemsInside = waterSystems.filter((system) => {
+        // Get coordinates for the system (using cached coordinates)
+        const cacheKey = `${system.county || ""}_${system.city || ""}_${
+          system.name || ""
+        }`;
+        const coords = coordinateCache.get(cacheKey);
+        if (!coords) return false;
 
-    // Find violations inside the polygon (only for systems that pass filters)
-    const violationsInside = violations.filter((violation) => {
-      // Find the system for this violation
-      const system = systemsInside.find(s => s.pwsid === violation.pwsid);
-      if (!system) return false;
-      
-      // Only include violations that match the current filter criteria
-      const isActiveViolation = violation.status === "Unaddressed" || violation.status === "Addressed";
-      if (!isActiveViolation) return false;
-      
-      return true;
-    });
+        if (!isPointInPolygon(coords, polygon)) return false;
 
-    const selection: PolygonSelection = {
-      id: `polygon_${Date.now()}`,
-      polygon,
-      bounds,
-      area: calculatePolygonArea(polygon),
-      systemsInside,
-      violationsInside,
-      createdAt: new Date(),
-    };
+        // Apply the same filter logic as markers
+        const systemViolations = violations.filter(
+          (v) => v.pwsid === system.pwsid
+        );
+        const activeViolations = systemViolations.filter(
+          (v) => v.status === "Unaddressed" || v.status === "Addressed"
+        );
+        const healthBasedViolations = activeViolations.filter(
+          (v) => v.isHealthBased
+        );
 
-    setPolygonSelections(prev => [...prev, selection]);
-    setActiveSelection(selection);
-    setDrawingMode(false);
+        // Determine system status
+        let systemStatus = "compliant";
+        if (healthBasedViolations.length > 0) {
+          systemStatus = "critical";
+        } else if (activeViolations.length > 0) {
+          systemStatus = "violation";
+        }
 
-    // Add click listener to polygon for reselection
-    polygon.addListener('click', () => {
+        // Apply current filter settings
+        if (systemStatus === "compliant" && !filters.showCompliant)
+          return false;
+        if (systemStatus === "violation" && !filters.showActiveViolations)
+          return false;
+        if (systemStatus === "critical" && !filters.showCriticalSystems)
+          return false;
+
+        return true;
+      });
+
+      // Find violations inside the polygon (only for systems that pass filters)
+      const violationsInside = violations.filter((violation) => {
+        // Find the system for this violation
+        const system = systemsInside.find((s) => s.pwsid === violation.pwsid);
+        if (!system) return false;
+
+        // Only include violations that match the current filter criteria
+        const isActiveViolation =
+          violation.status === "Unaddressed" ||
+          violation.status === "Addressed";
+        if (!isActiveViolation) return false;
+
+        return true;
+      });
+
+      const selection: PolygonSelection = {
+        id: `polygon_${Date.now()}`,
+        polygon,
+        bounds,
+        area: calculatePolygonArea(polygon),
+        systemsInside,
+        violationsInside,
+        createdAt: new Date(),
+      };
+
+      setPolygonSelections((prev) => [...prev, selection]);
       setActiveSelection(selection);
-    });
-  }, [waterSystems, violations]);
+      setDrawingMode(false);
+
+      // Add click listener to polygon for reselection
+      polygon.addListener("click", () => {
+        setActiveSelection(selection);
+      });
+    },
+    [waterSystems, violations]
+  );
 
   // Handle drawing mode toggle
   const handleToggleDrawing = () => {
@@ -685,7 +765,7 @@ export const MapView: React.FC = () => {
 
   // Handle clearing all polygons
   const handleClearPolygons = () => {
-    polygonSelections.forEach(selection => {
+    polygonSelections.forEach((selection) => {
       selection.polygon.setMap(null);
     });
     setPolygonSelections([]);
@@ -700,7 +780,7 @@ export const MapView: React.FC = () => {
   // Handle exporting zone data
   const handleExportZone = () => {
     if (!activeSelection) return;
-    
+
     const data = {
       zone: {
         id: activeSelection.id,
@@ -710,10 +790,12 @@ export const MapView: React.FC = () => {
       systems: activeSelection.systemsInside,
       violations: activeSelection.violationsInside,
     };
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `zone_analysis_${activeSelection.id}.json`;
     document.body.appendChild(a);
@@ -1003,7 +1085,7 @@ export const MapView: React.FC = () => {
             drawingMode={drawingMode}
           />
         </Wrapper>
-        
+
         {/* Zone Details Panel */}
         {activeSelection && (
           <ZoneDetailsPanel
@@ -1029,13 +1111,19 @@ export const MapView: React.FC = () => {
                 selectedDate={selectedDate}
                 onDateChange={setSelectedDate}
                 onDateRangeChange={handleDateRangeChange}
+                violationsData={violations}
                 className=""
               />
               <div className="mt-2 text-xs text-gray-500">
-                Showing data for: {selectedDate} 2024
+                Showing data for: {selectedDate}
                 <br />
                 <span className="text-blue-600 font-medium">
-                  {new Date(filters.dateRange.start).toLocaleDateString()} - {new Date(filters.dateRange.end).toLocaleDateString()}
+                  {new Date(filters.dateRange.start).toLocaleDateString()} -{" "}
+                  {new Date(filters.dateRange.end).toLocaleDateString()}
+                </span>
+                <br />
+                <span className="text-gray-400 text-xs">
+                  Based on violation occurrence dates
                 </span>
               </div>
             </div>
@@ -1049,14 +1137,14 @@ export const MapView: React.FC = () => {
                 onClick={handleToggleDrawing}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm ${
                   drawingMode
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-green-600 text-white hover:bg-green-700'
+                    ? "bg-red-600 text-white hover:bg-red-700"
+                    : "bg-green-600 text-white hover:bg-green-700"
                 }`}
               >
                 <Square className="w-4 h-4" />
-                {drawingMode ? 'Cancel Drawing' : 'Draw Zone'}
+                {drawingMode ? "Cancel Drawing" : "Draw Zone"}
               </button>
-              
+
               {polygonSelections.length > 0 && (
                 <button
                   onClick={handleClearPolygons}
@@ -1067,7 +1155,7 @@ export const MapView: React.FC = () => {
                 </button>
               )}
             </div>
-            
+
             <button
               onClick={handleExportPDF}
               className="flex items-center space-x-2 text-blue-600 hover:text-blue-700 font-medium text-sm w-full"
