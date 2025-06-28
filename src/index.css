@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom slim scrollbar */
+.scrollbar-slim {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.scrollbar-slim::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-slim::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.scrollbar-slim::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+.scrollbar-slim::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
