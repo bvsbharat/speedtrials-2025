@@ -55,6 +55,8 @@ export class SupabaseService {
   // Water Systems
   static async getWaterSystems(filters?: {
     searchTerm?: string;
+    advancedQuery?: string;
+    searchType?: string;
     systemType?: string;
     ownerType?: string;
     sourceType?: string;
@@ -70,8 +72,48 @@ export class SupabaseService {
 
     let query = supabase.from('water_systems').select('*', { count: 'exact' });
     
-    if (filters?.searchTerm) {
-      query = query.or(`pws_name.ilike.%${filters.searchTerm}%,pwsid.ilike.%${filters.searchTerm}%,city_served.ilike.%${filters.searchTerm}%,county_served.ilike.%${filters.searchTerm}%`);
+    // Handle advanced search if provided
+    if (filters?.advancedQuery && filters?.searchType) {
+      const advancedQuery = filters.advancedQuery;
+      const searchType = filters.searchType;
+      
+      switch (searchType) {
+        case 'exact':
+          query = query.or(`pws_name.eq.${advancedQuery},pwsid.eq.${advancedQuery},city_name.eq.${advancedQuery},county_served.eq.${advancedQuery}`);
+          break;
+        case 'contains':
+          query = query.or(`pws_name.ilike.%${advancedQuery}%,pwsid.ilike.%${advancedQuery}%,city_name.ilike.%${advancedQuery}%,county_served.ilike.%${advancedQuery}%`);
+          break;
+        case 'starts_with':
+          query = query.or(`pws_name.ilike.${advancedQuery}%,pwsid.ilike.${advancedQuery}%,city_name.ilike.${advancedQuery}%,county_served.ilike.${advancedQuery}%`);
+          break;
+        case 'ends_with':
+          query = query.or(`pws_name.ilike.%${advancedQuery},pwsid.ilike.%${advancedQuery},city_name.ilike.%${advancedQuery},county_served.ilike.%${advancedQuery}`);
+          break;
+        case 'regex':
+          // Note: PostgreSQL regex is case-sensitive by default, use ~* for case-insensitive
+          try {
+            query = query.or(`pws_name.match.${advancedQuery},pwsid.match.${advancedQuery},city_name.match.${advancedQuery},county_served.match.${advancedQuery}`);
+          } catch (error) {
+            console.warn('Invalid regex pattern, falling back to contains search');
+            query = query.or(`pws_name.ilike.%${advancedQuery}%,pwsid.ilike.%${advancedQuery}%,city_name.ilike.%${advancedQuery}%,county_served.ilike.%${advancedQuery}%`);
+          }
+          break;
+        case 'general':
+        default:
+          // Enhanced general search - split terms and search across multiple fields
+          const terms = advancedQuery.split(' ').filter(term => term.trim().length > 0);
+          if (terms.length > 0) {
+            const searchConditions = terms.map(term => 
+              `pws_name.ilike.%${term}%,pwsid.ilike.%${term}%,city_name.ilike.%${term}%,county_served.ilike.%${term}%,owner_type_code.ilike.%${term}%,pws_type_code.ilike.%${term}%`
+            ).join(',');
+            query = query.or(searchConditions);
+          }
+          break;
+      }
+    } else if (filters?.searchTerm) {
+      // Standard search functionality
+      query = query.or(`pws_name.ilike.%${filters.searchTerm}%,pwsid.ilike.%${filters.searchTerm}%,city_name.ilike.%${filters.searchTerm}%,county_served.ilike.%${filters.searchTerm}%`);
     }
     if (filters?.systemType) {
       query = query.eq('pws_type_code', filters.systemType);
@@ -601,6 +643,89 @@ export class SupabaseService {
     
     if (error) throw error;
     return data;
+  }
+
+  // Get water systems near a location
+  static async getWaterSystemsNearLocation(
+    lat: number, 
+    lng: number, 
+    radiusKm: number = 50
+  ): Promise<{ data: WaterSystem[]; total: number; hasMore: boolean }> {
+    try {
+      // For now, we'll use a simple bounding box approach
+      // In a production system, you'd want to use PostGIS for proper distance calculations
+      const latDelta = radiusKm / 111; // Rough conversion: 1 degree ≈ 111 km
+      const lngDelta = radiusKm / (111 * Math.cos(lat * Math.PI / 180));
+      
+      const { data, error, count } = await supabase
+        .from('water_systems')
+        .select('*', { count: 'exact' })
+        .gte('latitude', lat - latDelta)
+        .lte('latitude', lat + latDelta)
+        .gte('longitude', lng - lngDelta)
+        .lte('longitude', lng + lngDelta)
+        .limit(100);
+      
+      if (error) {
+        console.error('Error fetching nearby water systems:', error);
+        // Fallback to general search if coordinates don't work
+        return await this.getWaterSystems({ limit: 50 });
+      }
+      
+      return {
+        data: data ? data.map(this.transformWaterSystem) : [],
+        total: count || 0,
+        hasMore: false
+      };
+    } catch (error) {
+      console.error('Error in getWaterSystemsNearLocation:', error);
+      // Fallback to general search
+      return await this.getWaterSystems({ limit: 50 });
+    }
+  }
+
+  // Get violations for a specific water system
+  static async getViolationsBySystem(pwsid: string): Promise<Violation[]> {
+    try {
+      const { data, error } = await supabase
+        .from('violations')
+        .select('*')
+        .eq('pwsid', pwsid)
+        .order('non_compl_per_begin_date', { ascending: false })
+        .limit(50);
+      
+      if (error) {
+        console.error('Error fetching violations for system:', error);
+        return [];
+      }
+      
+      return data ? data.map(this.transformViolation) : [];
+    } catch (error) {
+      console.error('Error in getViolationsBySystem:', error);
+      return [];
+    }
+  }
+
+  // Get sample results for a specific water system
+  static async getSampleResultsBySystem(pwsid: string): Promise<SampleResult[]> {
+    try {
+      const { data, error } = await supabase
+        .from('sample_results')
+        .select('*')
+        .eq('pwsid', pwsid)
+        .order('sampling_start_date', { ascending: false })
+        .limit(50);
+      
+      if (error) {
+        console.error('Error fetching sample results for system:', error);
+        return [];
+      }
+      
+      return data ? data.map(this.transformSampleResult) : [];
+    } catch (error) {
+      console.error('Error in getSampleResultsBySystem:', error);
+      return [];
+    }
   }
 
   // Test database connection

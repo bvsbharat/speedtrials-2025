@@ -78,6 +78,7 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const mainTabs = [
+    { id: "dashboard", label: "Interactive Dashboard", icon: BarChart3 },
     { id: "search", label: "Water Systems", icon: Search },
     { id: "map", label: "Map View", icon: MapPin },
     { id: "violations", label: "Violations", icon: AlertTriangle },

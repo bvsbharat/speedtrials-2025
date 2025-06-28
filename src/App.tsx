@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from "./components/Header";
 import { WaterSystemSearch } from "./components/WaterSystemSearch";
 import { ViolationsTab } from "./components/ViolationsTab";
@@ -9,32 +10,24 @@ import { DataSharingHub } from "./components/DataSharingHub";
 import { MapView } from "./components/MapView";
 import { DataUpload } from "./components/DataUpload";
 import { LandingPage } from "./components/LandingPage";
+import { InteractiveWaterDashboard } from "./components/InteractiveWaterDashboard";
 import { WaterSystem, UserRole } from "./types/sdwis";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("home");
   const [currentRole, setCurrentRole] = useState<UserRole>("admin");
   const [selectedSystem, setSelectedSystem] = useState<WaterSystem | null>(
     null
   );
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Load saved role and active tab from localStorage on component mount
+  // Load saved role from localStorage on component mount
   useEffect(() => {
     const savedRole = localStorage.getItem("selectedUserRole") as UserRole;
     if (savedRole && ["public", "staff", "admin"].includes(savedRole)) {
       setCurrentRole(savedRole);
     }
-
-    // Clear any saved tab and always start with home view
-    localStorage.removeItem("activeTab");
-    setActiveTab("home");
-    console.log("Setting activeTab to home");
   }, []);
-
-  // Debug log to see current activeTab value
-  useEffect(() => {
-    console.log("Current activeTab:", activeTab);
-  }, [activeTab]);
 
   const handleRoleChange = (role: UserRole) => {
     setCurrentRole(role);
@@ -42,73 +35,54 @@ function App() {
   };
 
   const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
-    localStorage.setItem("activeTab", tab);
+    navigate(`/${tab === 'home' ? '' : tab}`);
   };
 
-  const renderTabContent = () => {
-    console.log('renderTabContent called with activeTab:', activeTab);
-    switch (activeTab) {
-      case "home":
-        return <LandingPage />;
-      case "search":
-        return <WaterSystemSearch onSystemSelect={setSelectedSystem} />;
-      case "map":
-        console.log('Rendering MapView');
-        return <MapView onSystemSelect={setSelectedSystem} />;
-      case "violations":
-        return <ViolationsTab />;
-      case "samples":
-        return <SampleResultsTab />;
-      case "upload":
-        return <DataUpload />;
-      case "enforcement":
-        return (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Enforcement Actions
-            </h3>
-            <p className="text-gray-600">
-              This section would display enforcement actions, administrative
-              orders, and compliance tracking. Available for staff and admin
-              users only.
-            </p>
-          </div>
-        );
-      case "inspections":
-        return (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Site Inspections
-            </h3>
-            <p className="text-gray-600">
-              This section would display site visit reports, inspection
-              schedules, and findings. Available for staff and admin users only.
-            </p>
-          </div>
-        );
-      case "analytics":
-        console.log('Rendering EnhancedDashboard');
-        return <EnhancedDashboard userRole={currentRole} />;
-      case "sharing":
-        return <DataSharingHub userRole={currentRole} />;
-      case "management":
-        return (
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              System Management
-            </h3>
-            <p className="text-gray-600">
-              This section would provide administrative tools for data
-              management, user access control, and system configuration.
-              Available for admin users only.
-            </p>
-          </div>
-        );
-      default:
-        return <LandingPage />;
-    }
+  // Get current active tab from location
+  const getActiveTab = () => {
+    const path = location.pathname.slice(1);
+    return path === '' ? 'home' : path;
   };
+
+  const activeTab = getActiveTab();
+
+  const EnforcementPage = () => (
+    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        Enforcement Actions
+      </h3>
+      <p className="text-gray-600">
+        This section would display enforcement actions, penalties, and
+        compliance measures taken against water systems with violations.
+        Available for staff and admin users.
+      </p>
+    </div>
+  );
+
+  const InspectionsPage = () => (
+    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        System Inspections
+      </h3>
+      <p className="text-gray-600">
+        This section would show inspection schedules, reports, and findings
+        for water system facilities. Available for staff and admin users.
+      </p>
+    </div>
+  );
+
+  const ManagementPage = () => (
+    <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+      <h3 className="text-xl font-semibold text-gray-900 mb-4">
+        System Management
+      </h3>
+      <p className="text-gray-600">
+        This section would provide administrative tools for data
+        management, user access control, and system configuration.
+        Available for admin users only.
+      </p>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -120,13 +94,64 @@ function App() {
         onLogoClick={() => handleTabChange('home')}
       />
       <div className="pt-20">
-        {activeTab === "map" || activeTab === "home" ? (
-          renderTabContent()
-        ) : (
-          <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {renderTabContent()}
-          </main>
-        )}
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/search" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <WaterSystemSearch
+                selectedSystem={selectedSystem}
+                onSystemSelect={setSelectedSystem}
+                currentRole={currentRole}
+              />
+            </main>
+          } />
+          <Route path="/map" element={<MapView />} />
+          <Route path="/dashboard" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <InteractiveWaterDashboard />
+            </main>
+          } />
+          <Route path="/violations" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <ViolationsTab />
+            </main>
+          } />
+          <Route path="/samples" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <SampleResultsTab />
+            </main>
+          } />
+          <Route path="/upload" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <DataUpload />
+            </main>
+          } />
+          <Route path="/enforcement" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <EnforcementPage />
+            </main>
+          } />
+          <Route path="/inspections" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <InspectionsPage />
+            </main>
+          } />
+          <Route path="/analytics" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <Dashboard />
+            </main>
+          } />
+          <Route path="/sharing" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <DataSharingHub />
+            </main>
+          } />
+          <Route path="/management" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <ManagementPage />
+            </main>
+          } />
+        </Routes>
       </div>
 
       {/* System Detail Modal */}

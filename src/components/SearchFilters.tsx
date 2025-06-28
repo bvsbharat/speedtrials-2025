@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SearchFiltersProps {
   searchTerm: string;
@@ -13,6 +13,7 @@ interface SearchFiltersProps {
   };
   onFilterChange: (filterName: string, value: string) => void;
   onClearFilters: () => void;
+  onAdvancedSearch?: (query: string, searchType: string) => void;
 }
 
 export const SearchFilters: React.FC<SearchFiltersProps> = ({
@@ -20,9 +21,13 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
   onSearchChange,
   filters,
   onFilterChange,
-  onClearFilters
+  onClearFilters,
+  onAdvancedSearch
 }) => {
-  const hasActiveFilters = Object.values(filters).some(value => value !== '');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [advancedQuery, setAdvancedQuery] = useState('');
+  const [searchType, setSearchType] = useState('general');
+  const hasActiveFilters = Object.values(filters).some(value => value !== '') || advancedQuery !== '';
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
@@ -33,25 +38,100 @@ export const SearchFilters: React.FC<SearchFiltersProps> = ({
         </h3>
         {hasActiveFilters && (
           <button
-            onClick={onClearFilters}
+            onClick={() => {
+              onClearFilters();
+              setAdvancedQuery('');
+              setSearchType('general');
+            }}
             className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-800"
           >
             <X className="w-4 h-4" />
-            <span>Clear Filters</span>
+            <span>Clear All</span>
           </button>
         )}
       </div>
 
       {/* Search Bar */}
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-        <input
-          type="text"
-          placeholder="Search by system name, PWSID, or city..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        />
+      <div className="space-y-4 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search by system name, PWSID, city, or any keyword..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        
+        {/* Advanced Search Toggle */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <span>Advanced Search</span>
+            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+          {advancedQuery && (
+            <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded">
+              Advanced query active
+            </span>
+          )}
+        </div>
+        
+        {/* Advanced Search Panel */}
+        {showAdvanced && (
+          <div className="bg-gray-50 rounded-lg p-4 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Search Type</label>
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="general">General Search</option>
+                  <option value="exact">Exact Match</option>
+                  <option value="contains">Contains Text</option>
+                  <option value="starts_with">Starts With</option>
+                  <option value="ends_with">Ends With</option>
+                  <option value="regex">Regular Expression</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Advanced Query</label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Enter advanced search query..."
+                    value={advancedQuery}
+                    onChange={(e) => setAdvancedQuery(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                  <button
+                    onClick={() => onAdvancedSearch?.(advancedQuery, searchType)}
+                    disabled={!advancedQuery.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  >
+                    Search
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Search Examples */}
+            <div className="text-xs text-gray-600">
+              <p className="font-medium mb-1">Examples:</p>
+              <ul className="space-y-1">
+                <li><strong>General:</strong> "Atlanta water" - searches across all fields</li>
+                <li><strong>Exact:</strong> "GA1234567" - exact PWSID match</li>
+                <li><strong>Contains:</strong> "Municipal" - systems containing this word</li>
+                <li><strong>Regex:</strong> "^GA\\d{7}$" - Georgia PWS IDs pattern</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filter Grid */}

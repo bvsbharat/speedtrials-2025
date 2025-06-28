@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { WaterSystem } from '../types/sdwis';
-import { SupabaseService } from '../services/supabaseService';
-import { WaterSystemCard } from './WaterSystemCard';
-import { SearchFilters } from './SearchFilters';
-import { Pagination } from './Pagination';
+import React, { useState, useEffect } from "react";
+import { WaterSystem } from "../types/sdwis";
+import { SupabaseService } from "../services/supabaseService";
+import { WaterSystemCard } from "./WaterSystemCard";
+import { SearchFilters } from "./SearchFilters";
+import { Pagination } from "./Pagination";
 
 interface WaterSystemSearchProps {
   onSystemSelect: (system: WaterSystem) => void;
 }
 
-export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSelect }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({
+  onSystemSelect,
+}) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [advancedQuery, setAdvancedQuery] = useState("");
+  const [searchType, setSearchType] = useState("general");
   const [filters, setFilters] = useState({
-    systemType: '',
-    ownerType: '',
-    sourceType: '',
-    complianceStatus: '',
-    county: ''
+    systemType: "",
+    ownerType: "",
+    sourceType: "",
+    complianceStatus: "",
+    county: "",
   });
   const [waterSystems, setWaterSystems] = useState<WaterSystem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,26 +37,33 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
           page: currentPage,
           limit: itemsPerPage,
           searchTerm,
+          advancedQuery: advancedQuery,
+          searchType: searchType,
           systemType: filters.systemType,
           ownerType: filters.ownerType,
           sourceType: filters.sourceType,
           complianceStatus: filters.complianceStatus,
-          county: filters.county
+          county: filters.county,
         });
         setWaterSystems(result.data);
         setTotalItems(result.total);
         setHasMore(result.hasMore);
       } catch (error) {
-        console.error('Error fetching water systems:', error);
+        console.error("Error fetching water systems:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchWaterSystems();
-  }, [currentPage, itemsPerPage, searchTerm, filters]);
-
-
+  }, [
+    currentPage,
+    itemsPerPage,
+    searchTerm,
+    advancedQuery,
+    searchType,
+    filters,
+  ]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -64,7 +75,7 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
   };
 
   const handleFilterChange = (filterName: string, value: string) => {
-    setFilters(prev => ({ ...prev, [filterName]: value }));
+    setFilters((prev) => ({ ...prev, [filterName]: value }));
     setCurrentPage(1); // Reset to first page when filters change
   };
 
@@ -83,14 +94,22 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
 
   const handleClearFilters = () => {
     setFilters({
-      systemType: '',
-      ownerType: '',
-      sourceType: '',
-      complianceStatus: '',
-      county: ''
+      systemType: "",
+      ownerType: "",
+      sourceType: "",
+      complianceStatus: "",
+      county: "",
     });
-    setSearchTerm('');
+    setSearchTerm("");
+    setAdvancedQuery("");
+    setSearchType("general");
     setCurrentPage(1); // Reset to first page when clearing filters
+  };
+
+  const handleAdvancedSearch = (query: string, type: string) => {
+    setAdvancedQuery(query);
+    setSearchType(type);
+    setCurrentPage(1); // Reset to first page when using advanced search
   };
 
   return (
@@ -101,6 +120,7 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
         filters={filters}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
+        onAdvancedSearch={handleAdvancedSearch}
       />
 
       <div className="flex items-center justify-between">
@@ -111,14 +131,15 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
           {totalItems} systems found
           {totalItems > itemsPerPage && (
             <span className="ml-2 text-sm text-gray-500">
-              (showing {Math.min(itemsPerPage, waterSystems.length)} on this page)
+              (showing {Math.min(itemsPerPage, waterSystems.length)} on this
+              page)
             </span>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {waterSystems.map(system => (
+        {waterSystems.map((system) => (
           <WaterSystemCard
             key={system.pwsid}
             system={system}
@@ -129,7 +150,9 @@ export const WaterSystemSearch: React.FC<WaterSystemSearchProps> = ({ onSystemSe
 
       {waterSystems.length === 0 && totalItems === 0 && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No water systems found matching your criteria.</p>
+          <p className="text-gray-500 text-lg">
+            No water systems found matching your criteria.
+          </p>
           <button
             onClick={handleClearFilters}
             className="mt-4 text-blue-600 hover:text-blue-800 font-medium"
