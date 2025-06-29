@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
+  User,
   Search,
   AlertTriangle,
+  MapPin,
   BarChart3,
   Calendar,
   Shield,
@@ -76,8 +78,9 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const mainTabs = [
+    { id: "dashboard", label: "Interactive Dashboard", icon: BarChart3 },
     { id: "search", label: "Water Systems", icon: Search },
-    { id: "map", label: "Research", icon: Search },
+    { id: "map", label: "Map View", icon: MapPin },
     { id: "violations", label: "Violations", icon: AlertTriangle },
     { id: "samples", label: "Water Quality", icon: FileText },
   ];
@@ -151,20 +154,12 @@ export const Header: React.FC<HeaderProps> = ({
                 <span className="text-white font-bold text-lg">GA</span>
               </div>
               <div>
-                <h1
-                  className={`text-xl font-bold ${
-                    activeTab === "home" ? "text-white" : "text-gray-900"
-                  }`}
-                >
-                  Georgia EPD
-                </h1>
-                <p
-                  className={`text-sm ${
-                    activeTab === "home" ? "text-white/80" : "text-gray-600"
-                  }`}
-                >
-                  Drinking Water Viewer
-                </p>
+                <h1 className={`text-xl font-bold ${
+                  activeTab === 'home' ? 'text-white' : 'text-gray-900'
+                }`}>Georgia EPD</h1>
+                <p className={`text-sm ${
+                  activeTab === 'home' ? 'text-white/80' : 'text-gray-600'
+                }`}>Drinking Water Viewer</p>
               </div>
             </button>
           </div>
@@ -181,7 +176,7 @@ export const Header: React.FC<HeaderProps> = ({
                     className={`flex items-center space-x-2 py-2 px-3 rounded-lg font-medium text-sm transition-colors ${
                       activeTab === tab.id
                         ? "bg-blue-100 text-blue-700"
-                        : activeTab === "home"
+                        : activeTab === 'home'
                         ? "text-white hover:text-gray-200 hover:bg-white/10"
                         : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                     }`}
@@ -199,9 +194,9 @@ export const Header: React.FC<HeaderProps> = ({
                 <button
                   onClick={() => setIsStaffDropdownOpen(!isStaffDropdownOpen)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                    activeTab === "home"
-                      ? "text-white hover:text-gray-200 hover:bg-white/10"
-                      : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                    activeTab === 'home'
+                      ? 'text-white hover:text-gray-200 hover:bg-white/10'
+                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   <Shield className="h-4 w-4" />

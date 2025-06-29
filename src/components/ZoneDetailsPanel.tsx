@@ -12,7 +12,6 @@ import {
 } from 'lucide-react';
 import { PolygonSelection, ZoneDetails } from '../types/maps';
 import { WaterSystem } from '../types/sdwis';
-import { calculateZoneCompliance, getComplianceStatusText, getComplianceStatusClasses } from '../utils/complianceCalculator';
 
 interface ZoneDetailsPanelProps {
   selection: PolygonSelection | null;
@@ -27,31 +26,45 @@ const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({
 }) => {
   if (!selection) return null;
 
-  const calculateZoneDetails = (selection: PolygonSelection): ZoneDetails & { systemCompliance: any[] } => {
+  const calculateZoneDetails = (selection: PolygonSelection): ZoneDetails => {
     const systems = selection.systemsInside;
     const violations = selection.violationsInside;
 
-    // Use the new compliance calculation logic
-    const complianceData = calculateZoneCompliance(systems, violations);
+    const compliantSystems = systems.filter(
+      (s) => s.complianceStatus === 'compliant'
+    ).length;
+    const violationSystems = systems.filter(
+      (s) => s.complianceStatus === 'violation'
+    ).length;
+    const criticalSystems = systems.filter(
+      (s) => s.complianceStatus === 'critical'
+    ).length;
 
     const totalPopulation = systems.reduce(
       (sum, s) => sum + (s.populationServed || 0),
       0
     );
 
+    const activeViolations = violations.filter(
+      (v) => v.status === 'Unaddressed' || v.status === 'Addressed'
+    ).length;
+
+    const healthBasedViolations = violations.filter(
+      (v) => v.isHealthBased
+    ).length;
+
     const averageSystemSize = systems.length > 0 ? totalPopulation / systems.length : 0;
 
     return {
-      totalSystems: complianceData.totalSystems,
-      compliantSystems: complianceData.compliantSystems,
-      violationSystems: complianceData.violationSystems,
-      criticalSystems: complianceData.criticalSystems,
+      totalSystems: systems.length,
+      compliantSystems,
+      violationSystems,
+      criticalSystems,
       totalPopulation,
-      activeViolations: complianceData.totalActiveViolations,
-      healthBasedViolations: complianceData.healthBasedViolations,
+      activeViolations,
+      healthBasedViolations,
       area: selection.area,
       averageSystemSize,
-      systemCompliance: complianceData.systemCompliance,
     };
   };
 
@@ -231,32 +244,27 @@ const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({
                 Water Systems in Zone ({details.totalSystems})
               </h4>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {details.systemCompliance.slice(0, 10).map((systemData) => (
+                {selection.systemsInside.slice(0, 10).map((system) => (
                   <div
-                    key={systemData.pwsid}
-                    onClick={() => handleSystemClick(systemData)}
+                    key={system.pwsid}
+                    onClick={() => handleSystemClick(system)}
                     className="p-2 rounded-lg border border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-gray-900 truncate">
-                          {systemData.name}
+                          {system.name}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {systemData.county} County • {(systemData.populationServed || 0).toLocaleString()} people
-                          {systemData.activeViolations > 0 && (
-                            <span className="ml-2 text-orange-600">
-                              • {systemData.activeViolations} active violation{systemData.activeViolations !== 1 ? 's' : ''}
-                            </span>
-                          )}
+                          {system.county} County • {(system.populationServed || 0).toLocaleString()} people
                         </div>
                       </div>
                       <div className="ml-2">
                         <div
                           className={`w-3 h-3 rounded-full ${
-                            systemData.calculatedComplianceStatus === 'compliant'
+                            system.complianceStatus === 'compliant'
                               ? 'bg-green-500'
-                              : systemData.calculatedComplianceStatus === 'critical'
+                              : system.complianceStatus === 'critical'
                               ? 'bg-red-500'
                               : 'bg-yellow-500'
                           }`}
@@ -265,9 +273,9 @@ const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({
                     </div>
                   </div>
                 ))}
-                {details.systemCompliance.length > 10 && (
+                {selection.systemsInside.length > 10 && (
                   <div className="text-xs text-gray-500 text-center py-2">
-                    ... and {details.systemCompliance.length - 10} more systems
+                    ... and {selection.systemsInside.length - 10} more systems
                   </div>
                 )}
               </div>

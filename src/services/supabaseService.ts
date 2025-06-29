@@ -228,10 +228,8 @@ export class SupabaseService {
       query = query.eq('is_health_based_ind', filters.isHealthBased);
     }
     if (filters?.dateRange) {
-      // Include violations that overlap with the selected date range
-      // A violation overlaps if: (violation_begin <= range_end) AND (violation_end >= range_start OR violation_end is null)
-      query = query.lte('non_compl_per_begin_date', filters.dateRange.end)
-                   .or(`non_compl_per_end_date.gte.${filters.dateRange.start},non_compl_per_end_date.is.null`);
+      query = query.gte('non_compl_per_begin_date', filters.dateRange.start)
+                   .lte('non_compl_per_begin_date', filters.dateRange.end);
     }
 
     query = query.range(offset, offset + limit - 1).order('non_compl_per_begin_date', { ascending: false });

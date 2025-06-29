@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from "./components/Header";
 import { WaterSystemSearch } from "./components/WaterSystemSearch";
 import { ViolationsTab } from "./components/ViolationsTab";
@@ -10,6 +10,7 @@ import { DataSharingHub } from "./components/DataSharingHub";
 import { MapView } from "./components/MapView";
 import { DataUpload } from "./components/DataUpload";
 import { LandingPage } from "./components/LandingPage";
+import { InteractiveWaterDashboard } from "./components/InteractiveWaterDashboard";
 import { WaterSystem, UserRole } from "./types/sdwis";
 
 function App() {
@@ -34,13 +35,13 @@ function App() {
   };
 
   const handleTabChange = (tab: string) => {
-    navigate(`/${tab === "home" ? "" : tab}`);
+    navigate(`/${tab === 'home' ? '' : tab}`);
   };
 
   // Get current active tab from location
   const getActiveTab = () => {
     const path = location.pathname.slice(1);
-    return path === "" ? "home" : path;
+    return path === '' ? 'home' : path;
   };
 
   const activeTab = getActiveTab();
@@ -64,8 +65,8 @@ function App() {
         System Inspections
       </h3>
       <p className="text-gray-600">
-        This section would show inspection schedules, reports, and findings for
-        water system facilities. Available for staff and admin users.
+        This section would show inspection schedules, reports, and findings
+        for water system facilities. Available for staff and admin users.
       </p>
     </div>
   );
@@ -76,111 +77,80 @@ function App() {
         System Management
       </h3>
       <p className="text-gray-600">
-        This section would provide administrative tools for data management,
-        user access control, and system configuration. Available for admin users
-        only.
+        This section would provide administrative tools for data
+        management, user access control, and system configuration.
+        Available for admin users only.
       </p>
     </div>
   );
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header
-        currentRole={currentRole}
+      <Header 
+        currentRole={currentRole} 
         onRoleChange={handleRoleChange}
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        onLogoClick={() => handleTabChange("home")}
+        onLogoClick={() => handleTabChange('home')}
       />
       <div className="pt-20">
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route
-            path="/search"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <WaterSystemSearch
-                  selectedSystem={selectedSystem}
-                  onSystemSelect={setSelectedSystem}
-                  currentRole={currentRole}
-                />
-              </main>
-            }
-          />
+          <Route path="/search" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <WaterSystemSearch
+                selectedSystem={selectedSystem}
+                onSystemSelect={setSelectedSystem}
+                currentRole={currentRole}
+              />
+            </main>
+          } />
           <Route path="/map" element={<MapView />} />
-          <Route path="/research" element={<MapView />} />
-          <Route
-            path="/dashboard"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <EnhancedDashboard />
-              </main>
-            }
-          />
-          <Route
-            path="/violations"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <ViolationsTab />
-              </main>
-            }
-          />
-          <Route
-            path="/samples"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <SampleResultsTab />
-              </main>
-            }
-          />
-          <Route
-            path="/upload"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <DataUpload />
-              </main>
-            }
-          />
-          <Route
-            path="/enforcement"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <EnforcementPage />
-              </main>
-            }
-          />
-          <Route
-            path="/inspections"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <InspectionsPage />
-              </main>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <Dashboard />
-              </main>
-            }
-          />
-          <Route
-            path="/sharing"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <DataSharingHub />
-              </main>
-            }
-          />
-          <Route
-            path="/management"
-            element={
-              <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <ManagementPage />
-              </main>
-            }
-          />
+          <Route path="/dashboard" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <InteractiveWaterDashboard />
+            </main>
+          } />
+          <Route path="/violations" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <ViolationsTab />
+            </main>
+          } />
+          <Route path="/samples" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <SampleResultsTab />
+            </main>
+          } />
+          <Route path="/upload" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <DataUpload />
+            </main>
+          } />
+          <Route path="/enforcement" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <EnforcementPage />
+            </main>
+          } />
+          <Route path="/inspections" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <InspectionsPage />
+            </main>
+          } />
+          <Route path="/analytics" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <Dashboard />
+            </main>
+          } />
+          <Route path="/sharing" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <DataSharingHub />
+            </main>
+          } />
+          <Route path="/management" element={
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <ManagementPage />
+            </main>
+          } />
         </Routes>
       </div>
 
